@@ -35,3 +35,30 @@ The same dedicated tool prefix also provides this actual browser/HTTP prerequisi
 qualification-browser-smoke
 
 It starts and closes a tiny real loopback HTTP page and sandbox-enabled Chromium, records actual process identities/launch argv and closure under ignored `.runtime/`, and reports the receipt path. It verifies the installed browser environment; it never supplies the application's behavior, design, API or passing acceptance.
+
+## Run the finished explorer
+
+From this checkout with Node.js 24 or newer:
+
+```sh
+npm run seed
+npm run start
+```
+
+Open **http://127.0.0.1:3000**. Stop the server with **Ctrl+C** in its terminal. To choose another local port, use `PORT=3001 npm run start`. The server always binds to `127.0.0.1`. No build step or frontend dependency installation is needed to run the app; it uses Node's built-in HTTP server and browser-native JavaScript. The server reads `.runtime/incidents.json` once at startup and never writes it.
+
+Start with all 2,400 incidents, newest first, 25 per page. Search is literal and case-insensitive. Checkbox selections within each category are combined with OR; categories, search and inclusive UTC dates are combined with AND. Clear individual selection chips or use Clear all. Sort ties always use ascending incident ID, including when sorting descending. Changing search, filters, sort or page size returns to page one. The daily chart and counts describe the entire matching result. Its expandable daily-count table includes zero days between the first and last matching dates.
+
+Open a row to inspect every field; Escape or the close button returns to the same page and restores focus. Save current view stores a named view in this browser's local storage for this origin. Reload and choose it to restore the search, filters, sorting and page size. Saved views start on page one. Delete view removes only the saved view. Export CSV includes every matching row in the current sort order; all fields are quoted, embedded quotes are doubled, and rows use CRLF. Tags are serialized as a JSON array inside their CSV field. No incident data is editable.
+
+## Application verification
+
+```sh
+npm test
+```
+
+The unchanged pretest verifies the generator, canonical bytes and pinned tooling. Node's generic test discovery runs `test/explorer.test.mjs`, which starts real ephemeral loopback servers and issues HTTP requests comparing query results against independent dataset calculations. It checks literal search, OR/AND filters, UTC endpoints, all sort directions and stable ties, pagination, whole-result counts and daily summaries, full details, invalid requests, and parsed CSV including multiline and quoted descriptions and all fields. It also checks that querying and exporting leaves the canonical bytes unchanged.
+
+The browser test dynamically locates the supplied tooling, launches sandbox-enabled Chromium with the exact shared options and library environment, and exercises page navigation, detail focus restoration, search, filter combinations, sort/page size, saved views across reload, deletion, a real downloaded CSV, empty results, loading, a genuine offline request failure and successful retry, keyboard focus, and a 390px viewport. No HTTP responses are replaced. Screenshots are written to ignored `.runtime/desktop.png` and `.runtime/mobile.png`. Every browser and test server is closed in `finally` blocks. This browser verification requires the supplied `qualification-chromium` tooling described above; a missing tool or sandbox limitation fails the suite rather than skipping acceptance checks.
+
+The API is read-only: `GET /api/options`, `GET /api/incidents`, `GET /api/incidents/:id`, and `GET /api/export`. Query parameters are `q`, repeated `service` / `status` / `severity`, `from` / `to` (YYYY-MM-DD), `sort` (`openedAt` or `severity`), `direction` (`asc` or `desc`), `size` (25 or 50), and `page` (starting at 1). The incidents response contains `items`, `summary`, `page`, and `size`; summaries cover every match.
